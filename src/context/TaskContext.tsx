@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Task, TaskCompletion, Frequency } from "../types/Tasks";
@@ -10,24 +10,6 @@ const generateSimpleId = () => {
 
 // In-memory storage fallback for platforms without persistent storage
 let inMemoryStorage: Task[] = [];
-
-// Debounced save function to reduce storage operations
-let saveTimeout: NodeJS.Timeout | null = null;
-let debouncedSaveCallback: ((tasks: Task[]) => void) | null = null;
-
-const setDebouncedSave = (saveCallback: (tasks: Task[]) => void, delay = 500) => {
-  debouncedSaveCallback = saveCallback;
-  return (tasks: Task[]) => {
-    if (saveTimeout) {
-      clearTimeout(saveTimeout);
-    }
-    saveTimeout = setTimeout(() => {
-      if (debouncedSaveCallback) {
-        debouncedSaveCallback(tasks);
-      }
-    }, delay);
-  };
-};
 
 // Simple storage interface
 const getStorageData = async (key: string): Promise<string | null> => {
@@ -88,9 +70,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Initialize debounced save
-  const [debouncedSave, setDebouncedSaveState] = useState<((tasks: Task[]) => void) | null>(null);
-
   // Load tasks from storage on app start
   useEffect(() => {
     loadTasks();
@@ -126,7 +105,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const saveTasks = useCallback(async (updatedTasks: Task[]) => {
+  const saveTasks = async (updatedTasks: Task[]) => {
     try {
       console.log('Saving tasks on platform:', Platform.OS);
       
@@ -136,51 +115,38 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Error saving tasks:", error);
     }
-  }, []);
+  };
 
-  // Initialize debounced save after saveTasks is defined
-  useEffect(() => {
-    setDebouncedSaveState(() => setDebouncedSave(saveTasks, 500));
-  }, [saveTasks]);
-
-  const addTask = useCallback((task: Task) => {
+  const addTask = (task: Task) => {
     const taskWithCompletions = { ...task, completions: [] };
     const updatedTasks = [...tasks, taskWithCompletions];
     setTasks(updatedTasks);
-    if (debouncedSave) {
-      debouncedSave(updatedTasks);
-    }
-  }, [tasks, debouncedSave]);
+    saveTasks(updatedTasks);
+  };
 
-  const updateTask = useCallback((updatedTask: Task) => {
+  const updateTask = (updatedTask: Task) => {
     const updatedTasks = tasks.map(task =>
       task.id === updatedTask.id ? updatedTask : task
     );
     setTasks(updatedTasks);
-    if (debouncedSave) {
-      debouncedSave(updatedTasks);
-    }
-  }, [tasks, debouncedSave]);
+    saveTasks(updatedTasks);
+  };
 
-  const toggleTask = useCallback((id: string) => {
+  const toggleTask = (id: string) => {
     const updatedTasks = tasks.map(task =>
       task.id === id ? { ...task, isActive: !task.isActive } : task
     );
     setTasks(updatedTasks);
-    if (debouncedSave) {
-      debouncedSave(updatedTasks);
-    }
-  }, [tasks, debouncedSave]);
+    saveTasks(updatedTasks);
+  };
 
-  const deleteTask = useCallback((id: string) => {
+  const deleteTask = (id: string) => {
     const updatedTasks = tasks.filter(task => task.id !== id);
     setTasks(updatedTasks);
-    if (debouncedSave) {
-      debouncedSave(updatedTasks);
-    }
-  }, [tasks, debouncedSave]);
+    saveTasks(updatedTasks);
+  };
 
-  const completeTask = useCallback((id: string) => {
+  const completeTask = (id: string) => {
     const now = new Date();
     const today = now.toISOString().split('T')[0];
     
@@ -204,10 +170,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     });
     
     setTasks(updatedTasks);
-    if (debouncedSave) {
-      debouncedSave(updatedTasks);
-    }
-  }, [tasks, debouncedSave]);
+    saveTasks(updatedTasks);
+  };
 
   const getTaskHistory = (taskId: string): TaskCompletion[] => {
     const task = tasks.find(t => t.id === taskId);

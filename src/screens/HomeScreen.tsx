@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
@@ -11,29 +11,14 @@ import { useTasks } from "../context/TaskContext";
 import { Task } from "../types/Tasks";
 import { homeStyles } from "../styles/common";
 
-// Memoized date calculation functions with caching
-const dateCache = new Map<string, Date>();
-
+// Calculate next due date based on frequency
 const getNextDueDate = (task: Task): Date => {
-  const cacheKey = `${task.id}-${task.startDate}-${task.frequency}-${task.time}-${task.dayOfWeek}-${task.dayOfMonth}`;
-  
-  if (dateCache.has(cacheKey)) {
-    const cachedDate = dateCache.get(cacheKey)!;
-    // Check if cache is still valid (not older than 1 hour)
-    const now = new Date();
-    const cacheAge = now.getTime() - cachedDate.getTime();
-    if (cacheAge < 3600000 && cachedDate > now) {
-      return cachedDate;
-    }
-  }
-
   const startDate = new Date(task.startDate);
   const now = new Date();
   let nextDue = new Date(startDate);
 
   // If start date is in future, use that
   if (startDate > now) {
-    dateCache.set(cacheKey, new Date(startDate));
     return startDate;
   }
 
@@ -91,22 +76,20 @@ const getNextDueDate = (task: Task): Date => {
       nextDue = startDate;
   }
 
-  // Cache the result
-  dateCache.set(cacheKey, new Date(nextDue));
   return nextDue;
 };
 
-// Memoized date formatting
-const formatDateDisplay = useCallback((dateString: string) => {
+// Format date for display
+const formatDateDisplay = (dateString: string) => {
   const date = new Date(dateString);
   const day = date.getDate().toString().padStart(2, '0');
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const year = date.getFullYear();
   return `${day}.${month}.${year}`;
-}, []);
+};
 
-// Memoized due date formatting
-const formatDueDate = useCallback((task: Task) => {
+// Format due date with relative time
+const formatDueDate = (task: Task) => {
   const nextDue = getNextDueDate(task);
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -129,46 +112,39 @@ const formatDueDate = useCallback((task: Task) => {
       return formatDateDisplay(nextDue.toISOString().split('T')[0]) + ` at ${task.time}`;
     }
   }
-}, [formatDateDisplay]);
+};
 
 export default function HomeScreen({ navigation }: any) {
-  const { tasks, toggleTask, deleteTask, completeTask, getLastWeekData, syncFromWeb } = useTasks();
+  const { tasks, toggleTask, deleteTask, completeTask, getLastWeekData, syncFromWeb, loading } = useTasks();
   const lastWeekData = getLastWeekData();
 
-  // Memoized task handlers
-  const handleTaskPress = useCallback((taskId: string) => {
-    navigation.navigate("EditTask", { taskId });
-  }, [navigation]);
+  // Show loading state
+  if (loading) {
+    return (
+      <View style={homeStyles.container}>
+        <View style={homeStyles.header}>
+          <Text style={homeStyles.title}>Mom's Chore Reminder</Text>
+        </View>
+        <View style={homeStyles.tasksContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={homeStyles.emptyText}>Loading tasks...</Text>
+        </View>
+      </View>
+    );
+  }
 
-  const handleDeleteTask = useCallback((taskId: string) => {
-    deleteTask(taskId);
-  }, [deleteTask]);
-
-  const handleToggleTask = useCallback((taskId: string) => {
-    toggleTask(taskId);
-  }, [toggleTask]);
-
-  const handleCompleteTask = useCallback((taskId: string) => {
-    completeTask(taskId);
-  }, [completeTask]);
-
-  const handleSyncFromWeb = useCallback(() => {
-    syncFromWeb();
-  }, [syncFromWeb]);
-
-  // Memoized task item component
-  const TaskItem = useCallback(({ item }: { item: Task }) => {
+  const renderTask = ({ item }: { item: Task }) => {
     const completionsThisWeek = lastWeekData[item.id] || 0;
     
     return (
       <View style={homeStyles.taskItem}>
         <View style={homeStyles.taskHeader}>
-          <TouchableOpacity onPress={() => handleTaskPress(item.id)}>
+          <TouchableOpacity onPress={() => navigation.navigate("EditTask", { taskId: item.id })}>
             <Text style={homeStyles.taskTitle}>{item.title}</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={homeStyles.deleteButton}
-            onPress={() => handleDeleteTask(item.id)}
+            onPress={() => deleteTask(item.id)}
           >
             <Text style={homeStyles.deleteButtonText}>×</Text>
           </TouchableOpacity>
@@ -179,7 +155,7 @@ export default function HomeScreen({ navigation }: any) {
         <View style={homeStyles.taskActions}>
           <TouchableOpacity 
             style={homeStyles.statusToggle}
-            onPress={() => handleToggleTask(item.id)}
+            onPress={() => toggleTask(item.id)}
           >
             <Text style={homeStyles.taskStatus}>
               {item.isActive ? "✓ Active" : "○ Inactive"}
@@ -187,7 +163,7 @@ export default function HomeScreen({ navigation }: any) {
           </TouchableOpacity>
           <TouchableOpacity 
             style={homeStyles.completeButton}
-            onPress={() => handleCompleteTask(item.id)}
+            onPress={() => completeTask(item.id)}
           >
             <Text style={homeStyles.completeButtonText}>
               ✓ Complete Today
@@ -199,10 +175,7 @@ export default function HomeScreen({ navigation }: any) {
         </Text>
       </View>
     );
-  }, [lastWeekData, handleTaskPress, handleDeleteTask, handleToggleTask, handleCompleteTask, formatDueDate, formatDateDisplay]);
-
-  // Memoized key extractor
-  const keyExtractor = useCallback((item: Task) => item.id, []);
+  };
 
   return (
     <View style={homeStyles.container}>
@@ -226,7 +199,7 @@ export default function HomeScreen({ navigation }: any) {
             margin: 10,
             alignItems: 'center'
           }}
-          onPress={handleSyncFromWeb}
+          onPress={() => syncFromWeb()}
         >
           <Text style={{ color: 'white', fontWeight: 'bold' }}>
             🔄 Sync from Web
@@ -241,19 +214,9 @@ export default function HomeScreen({ navigation }: any) {
         ) : (
           <FlatList
             data={tasks}
-            renderItem={TaskItem}
-            keyExtractor={keyExtractor}
+            renderItem={renderTask}
+            keyExtractor={(item) => item.id}
             style={homeStyles.taskList}
-            removeClippedSubviews={true}
-            maxToRenderPerBatch={10}
-            updateCellsBatchingPeriod={50}
-            initialNumToRender={10}
-            windowSize={10}
-            getItemLayout={(data, index) => ({
-              length: 150, // Approximate height of task item
-              offset: 150 * index,
-              index,
-            })}
           />
         )}
       </View>
