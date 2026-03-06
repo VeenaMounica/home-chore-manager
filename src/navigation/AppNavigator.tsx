@@ -1,11 +1,13 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Platform } from "react-native";
+import LoginScreen from "../screens/LoginScreen";
 import HomeScreen from "../screens/HomeScreen";
 import AddTaskScreen from "../screens/AddTaskScreen";
 import EditTaskScreen from "../screens/EditTaskScreen";
 
 export type RootStackParamList = {
+  Login: undefined;
   Home: undefined;
   AddTask: undefined;
   EditTask: { taskId: string };
@@ -22,9 +24,14 @@ export default function AppNavigator() {
         }}
       >
         <Stack.Screen 
+          name="Login" 
+          component={LoginScreen} 
+          options={{ title: "Login", headerShown: false }}
+        />
+        <Stack.Screen 
           name="Home" 
           component={HomeScreen} 
-          options={{ title: "Mom's Chore Reminder" }}
+          options={{ title: "Home Chores" }}
         />
         <Stack.Screen 
           name="AddTask" 

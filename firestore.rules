@@ -1,0 +1,23 @@
+rules_version='2'
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read/write access for authenticated users
+    match /tasks/{taskId} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Allow read/write access for authenticated users to their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Family members collection - users can read their family data
+    match /families/{familyId} {
+      allow read: if request.auth != null && 
+        request.auth.uid in resource.data.memberIds;
+      allow write: if request.auth != null && 
+        request.auth.uid in resource.data.adminIds;
+    }
+  }
+}

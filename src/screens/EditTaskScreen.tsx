@@ -6,6 +6,8 @@ import {
   Button,
   TouchableOpacity,
   Platform,
+  Dimensions,
+  ScrollView,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -13,6 +15,8 @@ import { RootStackParamList } from "../navigation/AppNavigator";
 import { useTasks } from "../context/TaskContext";
 import { Frequency, Task } from "../types/Tasks";
 import { addTaskStyles } from "../styles/common";
+import { colors } from "../theme/colors";
+import { typography } from "../theme/typography";
 
 type Props = NativeStackScreenProps<RootStackParamList, "EditTask">;
 
@@ -231,193 +235,344 @@ export default function EditTaskScreen({ navigation, route }: Props) {
   if (!existingTask) {
     console.log('Task not found for ID:', taskId);
     return (
-      <View style={addTaskStyles.container}>
-        <Text style={addTaskStyles.label}>Task not found</Text>
-        <Text>Task ID: {taskId}</Text>
-        <Button title="Go Back" onPress={() => navigation.goBack()} />
-      </View>
+      <ScrollView style={{ 
+        flex: 1, 
+        backgroundColor: '#f5f5f5'
+      }}>
+        <View style={{ 
+          flex: 1,
+          justifyContent: 'center', 
+          alignItems: 'center',
+          paddingHorizontal: 20,
+          minHeight: Dimensions.get('window').height
+        }}>
+          <View style={{
+            backgroundColor: 'white',
+            padding: 30,
+            borderRadius: 15,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 10,
+            elevation: 5,
+            width: '100%',
+            maxWidth: 400,
+            alignItems: 'center'
+          }}>
+            <Text style={{ 
+              fontSize: 20, 
+              fontWeight: 'bold', 
+              marginBottom: 20, 
+              textAlign: 'center',
+              color: '#333'
+            }}>Task not found</Text>
+            <Text style={{ 
+              fontSize: 16, 
+              color: '#666',
+              marginBottom: 20,
+              textAlign: 'center'
+            }}>Task ID: {taskId}</Text>
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#007AFF',
+                padding: 15,
+                borderRadius: 10,
+                alignItems: 'center',
+                shadowColor: '#007AFF',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+                elevation: 3
+              }}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>
+                Go Back
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
     );
   }
 
   return (
-    <View style={addTaskStyles.container}>
-      <Text style={addTaskStyles.label}>Task Title</Text>
-      <TextInput
-        style={addTaskStyles.input}
-        placeholder="e.g. Change bedsheets"
-        value={title}
-        onChangeText={setTitle}
-      />
+    <ScrollView style={{ 
+      flex: 1, 
+      backgroundColor: '#f5f5f5'
+    }}>
+      <View style={{ 
+        flex: 1,
+        justifyContent: 'center', 
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        minHeight: Dimensions.get('window').height,
+        paddingVertical: 20
+      }}>
+        <View style={{
+          backgroundColor: 'white',
+          padding: 30,
+          borderRadius: 15,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 10,
+          elevation: 5,
+          width: '100%',
+          maxWidth: 500
+        }}>
+          <Text style={{ 
+            fontSize: 24, 
+            fontWeight: 'bold', 
+            marginBottom: 25, 
+            textAlign: 'center',
+            color: '#333'
+          }}>Edit Task</Text>
 
-      <Text style={addTaskStyles.label}>Start Date</Text>
-      {Platform.OS === 'web' ? (
-        <TextInput
-          style={addTaskStyles.input}
-          placeholder="YYYY-MM-DD (e.g., 2026-02-25)"
-          value={startDate.toISOString().split('T')[0]}
-          onChangeText={(text) => {
-            const date = new Date(text);
-            if (!isNaN(date.getTime())) {
-              setStartDate(date);
-            }
-          }}
-        />
-      ) : (
-        <TouchableOpacity 
-          style={addTaskStyles.dateButton}
-          onPress={() => {
-            alert('Date picker pressed!');
-            console.log('Date picker button pressed');
-            setShowDatePicker(true);
-          }}
-        >
-          <Text style={addTaskStyles.dateButtonText}>{startDate.toISOString().split('T')[0]}</Text>
-        </TouchableOpacity>
-      )}
-
-      {Platform.OS !== 'web' && showDatePicker && (
-        <>
-          {console.log('Rendering date picker')}
-          <DateTimePicker
-            value={startDate}
-            mode="date"
-            display="calendar"
-            maximumDate={maxDate}
-            onChange={onDateChange}
-            style={{ height: 200, marginTop: 20 }}
-          />
-          <View style={{ marginTop: 10 }}>
-            <Text style={addTaskStyles.label}>Or enter date manually:</Text>
-            <TextInput
-              style={addTaskStyles.input}
-              placeholder="Try: 2026-02-25, 20-02-2026, 20.02.2026, 20/02/2026, Feb 25, 2026"
-              value={manualDate}
-              onChangeText={handleManualDateChange}
-            />
-          </View>
-        </>
-      )}
-
-      <Text style={addTaskStyles.label}>Time</Text>
-      {Platform.OS === 'web' ? (
-        <TextInput
-          style={addTaskStyles.input}
-          placeholder="HH:MM (e.g., 09:00)"
-          value={time}
-          onChangeText={(text) => {
-            // Validate time format HH:MM
-            const timeRegex = /^([01]?[0-9]|2[0-3]):([0-5][0-9])$/;
-            if (timeRegex.test(text)) {
-              setTime(text);
-            }
-          }}
-        />
-      ) : (
-        <TouchableOpacity 
-          style={addTaskStyles.dateButton}
-          onPress={() => {
-            console.log('Time picker button pressed');
-            setShowTimePicker(true);
-          }}
-        >
-          <Text style={addTaskStyles.dateButtonText}>{time}</Text>
-        </TouchableOpacity>
-      )}
-
-      {Platform.OS !== 'web' && showTimePicker && (
-        <DateTimePicker
-          value={new Date(`2000-01-01T${time}`)}
-          mode="time"
-          display="spinner"
-          onChange={onTimeChange}
-          style={{ height: 200, marginTop: 20 }}
-        />
-      )}
-
-      <Text style={addTaskStyles.label}>Frequency</Text>
-      <View style={addTaskStyles.buttonRow}>
-        <TouchableOpacity 
-          style={[
-            addTaskStyles.frequencyButton,
-            frequency === "daily" && addTaskStyles.frequencyButtonSelected
-          ]}
-          onPress={() => setFrequency("daily")}
-        >
-          <Text style={[
-            addTaskStyles.frequencyButtonText,
-            frequency === "daily" && addTaskStyles.frequencyButtonTextSelected
-          ]}>Daily</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[
-            addTaskStyles.frequencyButton,
-            frequency === "weekly" && addTaskStyles.frequencyButtonSelected
-          ]}
-          onPress={() => setFrequency("weekly")}
-        >
-          <Text style={[
-            addTaskStyles.frequencyButtonText,
-            frequency === "weekly" && addTaskStyles.frequencyButtonTextSelected
-          ]}>Weekly</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[
-            addTaskStyles.frequencyButton,
-            frequency === "biweekly" && addTaskStyles.frequencyButtonSelected
-          ]}
-          onPress={() => setFrequency("biweekly")}
-        >
-          <Text style={[
-            addTaskStyles.frequencyButtonText,
-            frequency === "biweekly" && addTaskStyles.frequencyButtonTextSelected
-          ]}>Biweekly</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[
-            addTaskStyles.frequencyButton,
-            frequency === "monthly" && addTaskStyles.frequencyButtonSelected
-          ]}
-          onPress={() => setFrequency("monthly")}
-        >
-          <Text style={[
-            addTaskStyles.frequencyButtonText,
-            frequency === "monthly" && addTaskStyles.frequencyButtonTextSelected
-          ]}>Monthly</Text>
-        </TouchableOpacity>
-      </View>
-
-      {frequency === "weekly" && (
-        <>
-          <Text style={addTaskStyles.label}>Day of Week</Text>
-          <View style={addTaskStyles.buttonRow}>
-            {daysOfWeek.map((day, index) => (
-              <Button
-                key={day}
-                title={day}
-                onPress={() => setDayOfWeek(index)}
-                color={dayOfWeek === index ? "#007AFF" : "#007AFF"}
-              />
-            ))}
-          </View>
-        </>
-      )}
-
-      {frequency === "monthly" && (
-        <>
-          <Text style={addTaskStyles.label}>Day of Month (1-31)</Text>
+          <Text style={addTaskStyles.label}>Task Title</Text>
           <TextInput
-            style={addTaskStyles.input}
-            placeholder="1"
-            value={dayOfMonth.toString()}
-            onChangeText={(text) => setDayOfMonth(parseInt(text) || 1)}
-            keyboardType="numeric"
+            style={{
+              ...addTaskStyles.input,
+              backgroundColor: '#f9f9f9',
+              fontSize: 16
+            }}
+            placeholder="e.g. Change bedsheets"
+            value={title}
+            onChangeText={setTitle}
           />
-        </>
-      )}
 
-      <View style={{ marginTop: 20 }}>
-        <Button title="Update Task" onPress={handleSave} />
+          <Text style={addTaskStyles.label}>Start Date</Text>
+          {Platform.OS === 'web' ? (
+            <input
+              type="date"
+              style={{
+                ...addTaskStyles.input,
+                cursor: 'pointer',
+                padding: '12px',
+                border: '1px solid #e9ecef',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+              }}
+              value={startDate.toISOString().split('T')[0]}
+              onChange={(e) => {
+                const dateValue = e.target.value;
+                if (dateValue) {
+                  const date = new Date(dateValue + 'T00:00:00');
+                  if (!isNaN(date.getTime())) {
+                    setStartDate(date);
+                    console.log('Date changed to:', date);
+                  }
+                }
+              }}
+            />
+          ) : (
+            <TouchableOpacity 
+              style={{
+                ...addTaskStyles.dateButton,
+                backgroundColor: '#f9f9f9'
+              }}
+              onPress={() => {
+                alert('Date picker pressed!');
+                console.log('Date picker button pressed');
+                setShowDatePicker(true);
+              }}
+            >
+              <Text style={addTaskStyles.dateButtonText}>{startDate.toISOString().split('T')[0]}</Text>
+            </TouchableOpacity>
+          )}
+
+          {Platform.OS !== 'web' && showDatePicker && (
+            <>
+              {console.log('Rendering date picker')}
+              <DateTimePicker
+                value={startDate}
+                mode="date"
+                display="calendar"
+                maximumDate={maxDate}
+                onChange={onDateChange}
+                style={{ height: 200, marginTop: 20 }}
+              />
+              <View style={{ marginTop: 10 }}>
+                <Text style={addTaskStyles.label}>Or enter date manually:</Text>
+                <TextInput
+                  style={{
+                    ...addTaskStyles.input,
+                    backgroundColor: '#f9f9f9'
+                  }}
+                  placeholder="Try: 2026-02-25, 20-02-2026, 20.02.2026, 20/02/2026, Feb 25, 2026"
+                  value={manualDate}
+                  onChangeText={handleManualDateChange}
+                />
+              </View>
+            </>
+          )}
+
+          <Text style={addTaskStyles.label}>Time</Text>
+          {Platform.OS === 'web' ? (
+            <input
+              type="time"
+              style={{
+                ...addTaskStyles.input,
+                cursor: 'pointer',
+                padding: '12px',
+                border: '1px solid #e9ecef',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+              }}
+              value={time}
+              onChange={(e) => {
+                const timeValue = e.target.value;
+                if (timeValue) {
+                  setTime(timeValue);
+                  console.log('Time changed to:', timeValue);
+                }
+              }}
+            />
+          ) : (
+            <TouchableOpacity 
+              style={{
+                ...addTaskStyles.dateButton,
+                backgroundColor: '#f9f9f9'
+              }}
+              onPress={() => {
+                console.log('Time picker button pressed');
+                setShowTimePicker(true);
+              }}
+            >
+              <Text style={addTaskStyles.dateButtonText}>{time}</Text>
+            </TouchableOpacity>
+          )}
+
+          {Platform.OS !== 'web' && showTimePicker && (
+            <DateTimePicker
+              value={new Date(`2000-01-01T${time}`)}
+              mode="time"
+              display="spinner"
+              onChange={onTimeChange}
+              style={{ height: 200, marginTop: 20 }}
+            />
+          )}
+
+          <Text style={addTaskStyles.label}>Frequency</Text>
+          <View style={addTaskStyles.buttonRow}>
+            <TouchableOpacity 
+              style={[
+                addTaskStyles.frequencyButton,
+                frequency === "daily" && addTaskStyles.frequencyButtonSelected
+              ]}
+              onPress={() => setFrequency("daily")}
+            >
+              <Text style={[
+                addTaskStyles.frequencyButtonText,
+                frequency === "daily" && addTaskStyles.frequencyButtonTextSelected
+              ]}>Daily</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[
+                addTaskStyles.frequencyButton,
+                frequency === "weekly" && addTaskStyles.frequencyButtonSelected
+              ]}
+              onPress={() => setFrequency("weekly")}
+            >
+              <Text style={[
+                addTaskStyles.frequencyButtonText,
+                frequency === "weekly" && addTaskStyles.frequencyButtonTextSelected
+              ]}>Weekly</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[
+                addTaskStyles.frequencyButton,
+                frequency === "biweekly" && addTaskStyles.frequencyButtonSelected
+              ]}
+              onPress={() => setFrequency("biweekly")}
+            >
+              <Text style={[
+                addTaskStyles.frequencyButtonText,
+                frequency === "biweekly" && addTaskStyles.frequencyButtonTextSelected
+              ]}>Biweekly</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[
+                addTaskStyles.frequencyButton,
+                frequency === "monthly" && addTaskStyles.frequencyButtonSelected
+              ]}
+              onPress={() => setFrequency("monthly")}
+            >
+              <Text style={[
+                addTaskStyles.frequencyButtonText,
+                frequency === "monthly" && addTaskStyles.frequencyButtonTextSelected
+              ]}>Monthly</Text>
+            </TouchableOpacity>
+          </View>
+
+          {frequency === "weekly" && (
+            <>
+              <Text style={addTaskStyles.label}>Day of Week</Text>
+              <View style={addTaskStyles.buttonRow}>
+                {daysOfWeek.map((day, index) => (
+                  <TouchableOpacity
+                    key={day}
+                    style={{
+                      backgroundColor: dayOfWeek === index ? '#007AFF' : '#f0f0f0',
+                      paddingVertical: 8,
+                      paddingHorizontal: 12,
+                      borderRadius: 6,
+                      marginHorizontal: 2,
+                      borderWidth: 1,
+                      borderColor: dayOfWeek === index ? '#007AFF' : '#ddd',
+                      minWidth: 40,
+                      alignItems: 'center'
+                    }}
+                    onPress={() => setDayOfWeek(index)}
+                  >
+                    <Text style={{ 
+                      fontSize: 14, 
+                      color: dayOfWeek === index ? '#fff' : '#333',
+                      fontWeight: '500'
+                    }}>{day}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
+
+          {frequency === "monthly" && (
+            <>
+              <Text style={addTaskStyles.label}>Day of Month (1-31)</Text>
+              <TextInput
+                style={{
+                  ...addTaskStyles.input,
+                  backgroundColor: '#f9f9f9'
+                }}
+                placeholder="1"
+                value={dayOfMonth.toString()}
+                onChangeText={(text) => setDayOfMonth(parseInt(text) || 1)}
+                keyboardType="numeric"
+              />
+            </>
+          )}
+
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#007AFF',
+              padding: 15,
+              borderRadius: 10,
+              alignItems: 'center',
+              marginTop: 20,
+              shadowColor: '#007AFF',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.2,
+              shadowRadius: 4,
+              elevation: 3
+            }}
+            onPress={handleSave}
+          >
+            <Text style={typography.button}>Update Task</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
