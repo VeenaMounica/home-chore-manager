@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "moms-chore-app",
-    "slug": "moms-chore-app",
+    "name": "home-chore-manager",
+    "slug": "home-chore-manager",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -21,10 +21,17 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.homechoremanager"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-secure-store",
+      "@react-native-community/datetimepicker"
+    ],
+    "scheme": "exp",
+    "platforms": ["ios", "android", "web"]
   }
 }
