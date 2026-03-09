@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { View, Text, Button, TextInput, TouchableOpacity, Platform, Dimensions, ScrollView } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Platform, ScrollView } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation/AppNavigator";
 import { useTasks } from "../context/TaskContext";
-import { Frequency } from "../types/Tasks";
-import { addTaskStyles } from "../styles/common";
+import { Frequency, TaskType, PersonalGoalType } from "../types/Tasks";
+import { homeStyles } from "../styles/homeStyles";
+import { addTaskStyles } from "../styles/addTaskStyles";
 import { colors } from "../theme/colors";
 import { typography } from "../theme/typography";
 
@@ -18,7 +19,9 @@ type Props = NativeStackScreenProps<RootStackParamList, "AddTask">;
 
 export default function AddTaskScreen({ navigation }: Props) {
   const [title, setTitle] = useState("");
+  const [taskType, setTaskType] = useState<TaskType>("chore");
   const [frequency, setFrequency] = useState<Frequency>("daily");
+  const [personalGoalType, setPersonalGoalType] = useState<PersonalGoalType>("normal");
   const [time, setTime] = useState("09:00");
   const [startDate, setStartDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -37,18 +40,33 @@ export default function AddTaskScreen({ navigation }: Props) {
       return;
     }
 
-    const newTask = {
+    const baseTask = {
       id: generateSimpleId(),
       title,
-      frequency,
-      time,
-      startDate: startDate.toISOString().split('T')[0],
+      type: taskType,
       isActive: true,
       completions: [],
-      ...(frequency === "weekly" && { dayOfWeek }),
-      ...(frequency === "monthly" && { dayOfMonth }),
     };
 
+    let newTask;
+    if (taskType === "chore") {
+      newTask = {
+        ...baseTask,
+        frequency,
+        time,
+        startDate: startDate.toISOString().split('T')[0],
+        ...(frequency === "weekly" && { dayOfWeek }),
+        ...(frequency === "monthly" && { dayOfMonth }),
+      };
+    } else {
+      // Personal task
+      newTask = {
+        ...baseTask,
+        personalGoalType,
+      };
+    }
+
+    console.log('Creating new task with data:', newTask);
     addTask(newTask);
     navigation.goBack();
   };
@@ -80,14 +98,7 @@ export default function AddTaskScreen({ navigation }: Props) {
 
   return (
     <ScrollView style={addTaskStyles.container}>
-      <View style={{ 
-        flex: 1,
-        justifyContent: 'center', 
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        minHeight: Dimensions.get('window').height,
-        paddingVertical: 20
-      }}>
+      <View style={homeStyles.screenWrapper}>
         <View style={addTaskStyles.card}>
           <Text style={addTaskStyles.cardTitle}>Add New Task</Text>
 
@@ -99,7 +110,81 @@ export default function AddTaskScreen({ navigation }: Props) {
             onChangeText={setTitle}
           />
 
-          <Text style={addTaskStyles.label}>Start Date</Text>
+          <Text style={addTaskStyles.label}>Task Type</Text>
+          <View style={addTaskStyles.buttonRow}>
+            <TouchableOpacity 
+              style={[
+                addTaskStyles.frequencyButton,
+                taskType === "chore" && addTaskStyles.frequencyButtonSelected
+              ]}
+              onPress={() => setTaskType("chore")}
+            >
+              <Text style={[
+                addTaskStyles.frequencyButtonText,
+                taskType === "chore" && addTaskStyles.frequencyButtonTextSelected
+              ]}>Chore</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[
+                addTaskStyles.frequencyButton,
+                taskType === "personal" && addTaskStyles.frequencyButtonSelected
+              ]}
+              onPress={() => setTaskType("personal")}
+            >
+              <Text style={[
+                addTaskStyles.frequencyButtonText,
+                taskType === "personal" && addTaskStyles.frequencyButtonTextSelected
+              ]}>Personal Goal</Text>
+            </TouchableOpacity>
+          </View>
+
+          {taskType === "personal" && (
+            <>
+              <Text style={addTaskStyles.label}>Goal Type</Text>
+              <View style={addTaskStyles.buttonRow}>
+                <TouchableOpacity 
+                  style={[
+                    addTaskStyles.frequencyButton,
+                    personalGoalType === "immediate" && addTaskStyles.frequencyButtonSelected
+                  ]}
+                  onPress={() => setPersonalGoalType("immediate")}
+                >
+                  <Text style={[
+                    addTaskStyles.frequencyButtonText,
+                    personalGoalType === "immediate" && addTaskStyles.frequencyButtonTextSelected
+                  ]}>Immediate</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[
+                    addTaskStyles.frequencyButton,
+                    personalGoalType === "normal" && addTaskStyles.frequencyButtonSelected
+                  ]}
+                  onPress={() => setPersonalGoalType("normal")}
+                >
+                  <Text style={[
+                    addTaskStyles.frequencyButtonText,
+                    personalGoalType === "normal" && addTaskStyles.frequencyButtonTextSelected
+                  ]}>Normal</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[
+                    addTaskStyles.frequencyButton,
+                    personalGoalType === "long-term" && addTaskStyles.frequencyButtonSelected
+                  ]}
+                  onPress={() => setPersonalGoalType("long-term")}
+                >
+                  <Text style={[
+                    addTaskStyles.frequencyButtonText,
+                    personalGoalType === "long-term" && addTaskStyles.frequencyButtonTextSelected
+                  ]}>Long-term</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+
+          {taskType === "chore" && (
+            <>
+              <Text style={addTaskStyles.label}>Start Date</Text>
           {Platform.OS === 'web' ? (
             <input
               type="date"
@@ -248,9 +333,16 @@ export default function AddTaskScreen({ navigation }: Props) {
                     key={day}
                     style={{
                       ...addTaskStyles.frequencyButton,
-                      ...(frequency === "weekly" && dayOfWeek === index && addTaskStyles.frequencyButtonSelected)
+                      ...(frequency === "weekly" && dayOfWeek === index && {
+                        ...addTaskStyles.frequencyButtonSelected,
+                        borderWidth: 2,
+                        transform: [{ scale: 1.1 }]
+                      })
                     }}
-                    onPress={() => setDayOfWeek(index)}
+                    onPress={() => {
+                      console.log('Setting day of week to:', index);
+                      setDayOfWeek(index);
+                    }}
                   >
                     <Text style={[
                       addTaskStyles.frequencyButtonText,
@@ -272,6 +364,9 @@ export default function AddTaskScreen({ navigation }: Props) {
                 onChangeText={(text) => setDayOfMonth(parseInt(text) || 1)}
                 keyboardType="numeric"
               />
+            </>
+          )}
+
             </>
           )}
 

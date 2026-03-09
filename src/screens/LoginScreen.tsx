@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { loginUser, registerUser } from '../config/firebase';
-import { addTaskStyles, homeStyles } from '../styles/common';
+import { addTaskStyles } from '../styles/addTaskStyles';
+import { homeStyles } from '../styles/homeStyles';
 import { useTasks } from '../context/TaskContext';
 
 export default function LoginScreen({ navigation }: any) {
@@ -37,13 +38,7 @@ export default function LoginScreen({ navigation }: any) {
 
   return (
     <View style={homeStyles.container}>
-      <View style={{ 
-        flex: 1, 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        paddingHorizontal: 24,
-        minHeight: Dimensions.get('window').height
-      }}>
+      <View style={homeStyles.screenWrapper}>
         <View style={addTaskStyles.card}>
           <Text style={addTaskStyles.cardTitle}>
             Home Chore Manager

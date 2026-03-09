@@ -1,6 +1,8 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
   initializeAuth,
+  getAuth,
+  setPersistence,
   browserLocalPersistence,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -12,7 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Firebase config
 const firebaseConfig = {
-  apiKey: "REMOVED_API_KEY",
+  apiKey: process.env.FIREBASE_API_KEY,
   authDomain: "home-chore-manager.firebaseapp.com",
   projectId: "home-chore-manager",
   storageBucket: "home-chore-manager.firebasestorage.app",
@@ -27,7 +29,9 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 // Initialize auth once
 let auth: any;
 
-console.log('Initializing Firebase auth for platform:', typeof window === 'undefined' ? 'React Native' : 'Web');
+console.log('firebase.ts loaded - initializing Firebase auth for platform:', typeof window === 'undefined' ? 'React Native' : 'Web');
+
+let authReady: Promise<void> = Promise.resolve();
 
 if (typeof window === 'undefined') {
   // React Native environment - try to use React Native persistence
@@ -45,24 +49,47 @@ if (typeof window === 'undefined') {
   }
 } else {
   // Web environment
-  auth = initializeAuth(app, {
-    persistence: browserLocalPersistence,
-  });
-  console.log('Firebase auth initialized with web persistence');
+  auth = getAuth(app);
+  authReady = (async () => {
+    try {
+      await setPersistence(auth, browserLocalPersistence);
+      console.log('Web auth persistence set to browserLocalPersistence');
+      console.log('authReady: persistence is configured for web');
+    } catch (error) {
+      console.warn('Failed to set web persistence:', error);
+    }
+  })();
 }
 
 // Firestore
 const db = getFirestore(app);
 
-// Export instances
-export { auth, db };
+// Export instances and helpers
+export { auth, db, authReady };
+
+// Ensure web persistence is applied before any sign-in action
+const ensureWebPersistence = async () => {
+  if (typeof window !== 'undefined') {
+    try {
+      console.log('ensureWebPersistence: attempting to set browserLocalPersistence');
+      await setPersistence(auth, browserLocalPersistence);
+      console.log('ensureWebPersistence: browserLocalPersistence set');
+    } catch (error) {
+      console.warn('Failed to ensure web persistence:', error);
+    }
+  }
+};
 
 // Auth functions
-export const loginUser = (email: string, password: string) =>
-  signInWithEmailAndPassword(auth, email, password);
+export const loginUser = async (email: string, password: string) => {
+  await ensureWebPersistence();
+  return signInWithEmailAndPassword(auth, email, password);
+};
 
-export const registerUser = (email: string, password: string) =>
-  createUserWithEmailAndPassword(auth, email, password);
+export const registerUser = async (email: string, password: string) => {
+  await ensureWebPersistence();
+  return createUserWithEmailAndPassword(auth, email, password);
+};
 
 export const logoutUser = () => signOut(auth);
 
